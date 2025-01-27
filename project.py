@@ -1,7 +1,12 @@
-import os, argparse, chess, chess.engine
+import os
+import argparse
+import chess
+import chess.engine
 
 
 def main() -> None:
+    """Main function that calls other functions."""
+    
     config: argparse.Namespace = get_args()
     
     while not board.is_game_over():
@@ -14,6 +19,12 @@ def main() -> None:
 
 
 def get_move() -> chess.Move:
+    """
+    Asks for input from a user and returns the validated move.
+    If it is a command, it is executed.
+    :return: the inputted validated move as a chess.Move object.
+    """
+    
     while True:
         try:
             move: str = input(">").strip().lower()
@@ -31,6 +42,11 @@ def get_move() -> chess.Move:
 
 
 def get_args() -> argparse.Namespace:
+    """
+    Defines the arguments for the program, calls the appropriate functions
+    :return: the arguments as an argparse.Namespace
+    """
+    
     parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="cli-chess", exit_on_error=False,
                                                               description="a cli chess game to play against stockfish")
     parser.add_argument("-l", "--load", type=str,
@@ -53,6 +69,8 @@ def get_args() -> argparse.Namespace:
 
 
 def check_autosave() -> None:
+    """Checks if there is an autosave and prompts before loading it."""
+    
     try:
         with open("autosave.chess", "r") as savefile:
             
@@ -66,8 +84,14 @@ def check_autosave() -> None:
         pass
 
 
-def command(move: str) -> bool:
-    match move:
+def command(string: str) -> bool:
+    """
+    Checks if a string is a set command.
+    :param string: the string to be checked.
+    :return: if the string is a command or not.
+    """
+    
+    match string:
         case "board":
             print(board)
         
@@ -88,6 +112,11 @@ def command(move: str) -> bool:
 
 
 def set_board(fen: str) -> None:
+    """
+    Sets the board to state of the passed fen.
+    :param fen: fen of a board as a string
+    """
+    
     try:
         board.set_fen(fen)
     
@@ -104,7 +133,7 @@ if __name__ == "__main__":
         bot: chess.engine.SimpleEngine = chess.engine.SimpleEngine.popen_uci("./stockfish")
         main()
     
-    except (EOFError, KeyboardInterrupt):
+    except (EOFError, KeyboardInterrupt, chess.engine.EngineError):
         with open("autosave.chess", "w+") as autosave:
             autosave.write(board.fen())
     
