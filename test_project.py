@@ -1,10 +1,13 @@
-def test_function_1():
+from project import get_move, get_args, command
+
+
+def test_get_move():
     ...
 
 
-def test_function_2():
+def test_get_args():
     ...
 
 
-def test_function_n():
+def test_command():
     ...
