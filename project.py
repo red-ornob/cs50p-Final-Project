@@ -125,8 +125,8 @@ def set_board(fen: str) -> None:
         raise KeyboardInterrupt
 
 
+board: chess.Board = chess.Board()
 if __name__ == "__main__":
-    board: chess.Board = chess.Board()
     bot: None = None
     
     try:
