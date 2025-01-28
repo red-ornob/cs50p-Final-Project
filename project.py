@@ -35,23 +35,38 @@ def main(board: chess.Board, bot: chess.engine.SimpleEngine) -> None:
     
     config: argparse.Namespace = get_args()
     
-    white, black = "user", "bot"
+    loaded = True
+    white, black = set_players(config.play)
+    
     if config.load:
         set_board(config.load, board)
     elif not check_autosave(board):
-        white, black = set_players(config.play)
-        print(f"Playing as {"white" * (white == "user") + "black" * (black == "user")}")
+        loaded = False
     
+    if loaded:
+        white, black = ("user" * (board.turn == chess.WHITE) + "bot" * (board.turn != chess.WHITE),
+                        "bot" * (board.turn != chess.BLACK) + "user" * (board.turn == chess.BLACK))
     
+    print(f"Playing as {"white" * (white == "user") + "black" * (black == "user")}")
     while not board.is_game_over():
         
-        if white == "user" and config.board:
-            print(board)
-        play(white, board, bot, config)
-        
-        if black == "user" and config.board:
-            print(board)
-        play(black, board, bot, config)
+        match board.turn:
+            case chess.WHITE:
+                if white == "user" and config.board:
+                    print(board)
+                play(white, board, bot, config)
+            case chess.BLACK:
+                if black == "user" and config.board:
+                    print(board)
+                play(black, board, bot, config)
+    
+    match board.outcome().winner:
+        case chess.WHITE:
+            print(f"{white} won!")
+        case chess.BLACK:
+            print(f"{black} won!")
+        case _:
+            print(f"draw!")
 
 
 def play(player: str, board: chess.Board, bot: chess.engine.SimpleEngine, config: argparse.Namespace) -> None:
