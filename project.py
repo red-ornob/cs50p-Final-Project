@@ -5,46 +5,77 @@ import chess
 import chess.engine
 
 
-def main() -> None:
+def init() -> None:
+    board: chess.Board = chess.Board()
+    bot: None = None
+    
+    try:
+        bot: chess.engine.SimpleEngine = chess.engine.SimpleEngine.popen_uci("./stockfish")
+        main(board, bot)
+    
+    except (EOFError, KeyboardInterrupt, SystemExit, chess.engine.EngineError):
+        with open("autosave.chess", "w+") as autosave:
+            autosave.write(board.fen())
+    
+    except argparse.ArgumentError as err:
+        print(str(err))
+    
+    except FileNotFoundError:
+        print("Make sure you have stockfish downloaded and added to path or the execution dir")
+    
+    if bot is not None:
+        bot.quit()
+
+
+def main(board: chess.Board, bot: chess.engine.SimpleEngine) -> None:
     """
     Main function that calls other functions.
     :return: None
     """
     
     config: argparse.Namespace = get_args()
-    white, black = set_players(config.play)
-    print(f"Playing as {"white" * (white == "user") + "black" * (black == "user")}")
+    
+    white, black = "user", "bot"
+    if config.load:
+        set_board(config.load, board)
+    elif not check_autosave(board):
+        white, black = set_players(config.play)
+        print(f"Playing as {"white" * (white == "user") + "black" * (black == "user")}")
+    
     
     while not board.is_game_over():
         
         if white == "user" and config.board:
             print(board)
-        play(white, config)
+        play(white, board, bot, config)
         
         if black == "user" and config.board:
             print(board)
-        play(black, config)
+        play(black, board, bot, config)
 
 
-def play(player, config):
+def play(player: str, board: chess.Board, bot: chess.engine.SimpleEngine, config: argparse.Namespace) -> None:
     """
     Calls the right function for whose turn it is
     :param player: the player in string
+    :param board: The chess board.
+    :param bot: The chess bot.
     :param config: the configuration set for the bot
     :return: None
     """
     
     match player:
         case "user":
-            board.push(get_move())
+            board.push(get_move(board))
         case "bot":
             board.push(bot.analysis(board, chess.engine.Limit(time=config.time, depth=config.depth)).wait().move)
 
 
-def get_move() -> chess.Move:
+def get_move(board: chess.Board) -> chess.Move:
     """
     Asks for input from a user and returns the validated move.
     If it is a command, it is executed.
+    :param board: The chess board.
     :return: the inputted validated move as a chess.Move object.
     """
     
@@ -52,7 +83,7 @@ def get_move() -> chess.Move:
         try:
             move: str = input(">").strip().lower()
             
-            if command(move):
+            if command(move, board):
                 continue
             
             move: chess.Move = chess.Move.from_uci(move)
@@ -83,15 +114,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("-p", "--play", default=0, type=int, choices=range(3),
                         help="selects which colour to play as. 0: random [default] 1: white 2: black")
     
-    args: argparse.Namespace = parser.parse_args()
-    
-    
-    if args.load:
-        set_board(args.load)
-    else:
-        check_autosave()
-    
-    return args
+    return parser.parse_args()
 
 
 def set_players(mode: int) -> list[str]:
@@ -112,29 +135,34 @@ def set_players(mode: int) -> list[str]:
             return ["bot", "user"]
 
 
-def check_autosave() -> None:
+def check_autosave(board: chess.Board) -> bool:
     """
     Checks if there is an autosave and prompts before loading it.
-    :return: None
+    :param board: The chess board.
+    :return: The status of if the board was loaded.
     """
     
+    status = False
     try:
         with open("autosave.chess", "r") as savefile:
             
             # noinspection SpellCheckingInspection
             if (fen := savefile.read()) != r"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"\
                     and input("Do you want to load the last game?(y/N) ").strip().lower().startswith("y"):
-                set_board(fen)
+                set_board(fen, board)
+                status = True
             os.remove("autosave.chess")
     
     except FileNotFoundError:
         pass
+    return status
 
 
-def command(string: str) -> bool:
+def command(string: str, board: chess.Board) -> bool:
     """
     Checks if a string is a set command.
     :param string: the string to be checked.
+    :param board: The chess board.
     :return: if the string is a command or not.
     """
     
@@ -147,7 +175,7 @@ def command(string: str) -> bool:
                   "with the [-l | --load] argument or the `load` in game command")
         
         case "load":
-            set_board(input("Paste board string here: "))
+            set_board(input("Paste board string here: "), board)
         
         case "quit":
             raise KeyboardInterrupt
@@ -158,10 +186,11 @@ def command(string: str) -> bool:
     return True
 
 
-def set_board(fen: str) -> None:
+def set_board(fen: str, board: chess.Board) -> None:
     """
     Sets the board to state of the passed fen.
-    :param fen: fen of a board as a string
+    :param fen: fen of a board as a string.
+    :param board: The chess board.
     :return: None
     """
     
@@ -173,23 +202,5 @@ def set_board(fen: str) -> None:
         raise KeyboardInterrupt
 
 
-board: chess.Board = chess.Board()
-if __name__ == "__main__":
-    bot: None = None
-    
-    try:
-        bot: chess.engine.SimpleEngine = chess.engine.SimpleEngine.popen_uci("./stockfish")
-        main()
-    
-    except (EOFError, KeyboardInterrupt, SystemExit, chess.engine.EngineError):
-        with open("autosave.chess", "w+") as autosave:
-            autosave.write(board.fen())
-    
-    except argparse.ArgumentError as err:
-        print(str(err))
-    
-    except FileNotFoundError:
-        print("Make sure you have stockfish downloaded and added to path or the execution dir")
-    
-    if bot is not None:
-        bot.quit()
+if __name__ == '__main__':
+    init()
