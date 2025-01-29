@@ -6,6 +6,8 @@ import chess.engine
 
 
 def init() -> None:
+    """Initiation for the program."""
+    
     board: chess.Board = chess.Board()
     bot: None = None
     
@@ -35,26 +37,17 @@ def main(board: chess.Board, bot: chess.engine.SimpleEngine) -> None:
     
     config: argparse.Namespace = get_args()
     
-    loaded = True
-    white, black = set_players(config.play)
-    
-    if config.load:
-        set_board(config.load, board)
-    elif not check_autosave(board):
-        loaded = False
-    
-    if loaded:
-        white, black = ("user" * (board.turn == chess.WHITE) + "bot" * (board.turn != chess.WHITE),
-                        "bot" * (board.turn != chess.BLACK) + "user" * (board.turn == chess.BLACK))
-    
+    white, black = set_players(config, board)
     print(f"Playing as {"white" * (white == "user") + "black" * (black == "user")}")
+    
     while not board.is_game_over():
-        
         match board.turn:
+        
             case chess.WHITE:
                 if white == "user" and config.board:
                     print(board)
                 play(white, board, bot, config)
+        
             case chess.BLACK:
                 if black == "user" and config.board:
                     print(board)
@@ -62,11 +55,11 @@ def main(board: chess.Board, bot: chess.engine.SimpleEngine) -> None:
     
     match board.outcome().winner:
         case chess.WHITE:
-            print(f"{white} won!")
+            print(f"{white.capitalize()} won!")
         case chess.BLACK:
-            print(f"{black} won!")
+            print(f"{black.capitalize()} won!")
         case _:
-            print(f"draw!")
+            print(f"Draw!")
 
 
 def play(player: str, board: chess.Board, bot: chess.engine.SimpleEngine, config: argparse.Namespace) -> None:
@@ -83,7 +76,9 @@ def play(player: str, board: chess.Board, bot: chess.engine.SimpleEngine, config
         case "user":
             board.push(get_move(board))
         case "bot":
-            board.push(bot.analysis(board, chess.engine.Limit(time=config.time, depth=config.depth)).wait().move)
+            move = bot.analysis(board, chess.engine.Limit(time=config.time, depth=config.depth)).wait().move
+            board.push(move)
+            print(f"bot: {move}")
 
 
 def get_move(board: chess.Board) -> chess.Move:
@@ -116,13 +111,13 @@ def get_args() -> argparse.Namespace:
     :return: the arguments as an argparse.Namespace
     """
     
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="cli-chess", exit_on_error=False,
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="python project.py", exit_on_error=False,
                                                               description="a cli chess game to play against stockfish")
     parser.add_argument("-l", "--load", type=str,
-                        help="Loads a chess board from a string, you can copy a board by using `save` command in game")
+                        help="loads a chess board from a string, you can copy a board with the save command")
     parser.add_argument("-b", "--board", action='store_true',
                         help="displays the board before each move, alternatively use `board` command in game")
-    parser.add_argument("-t", "--time", default=1, type=int,
+    parser.add_argument("-t", "--time", default=1, type=float,
                         help="sets the time limit in seconds for the bot, defaults to 1")
     parser.add_argument("-d", "--depth", default=20, type=int,
                         help="sets the depth of analysis limit for the bot, defaults to 20")
@@ -132,14 +127,22 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def set_players(mode: int) -> list[str]:
+def set_players(config: argparse.Namespace, board: chess.Board) -> list[str]:
     """
     Sets the white and black players.
-    :param mode: The user inputted mode.
+    :param config: User set configurations.
+    :param board: The active board.
     :return: a list of the order of turns.
     """
     
-    match mode:
+    loaded = load_if(config.load, board)
+    if loaded:
+        if board.turn == chess.WHITE:
+            return ["user", "bot"]
+        else:
+            return ["bot", "user"]
+    
+    match config.play:
         case 0:
             players = ["user", "bot"]
             random.shuffle(players)
@@ -148,6 +151,21 @@ def set_players(mode: int) -> list[str]:
             return ["user", "bot"]
         case 2:
             return ["bot", "user"]
+
+
+def load_if(fen: str, board: chess.Board) -> bool:
+    """
+    Loads a fen if needed.
+    :param fen: The fen loaded.
+    :param board: The current board.
+    :return: a status bool.
+    """
+    
+    if fen:
+        set_board(fen, board)
+    elif not check_autosave(board):
+        return False
+    return True
 
 
 def check_autosave(board: chess.Board) -> bool:
@@ -186,11 +204,8 @@ def command(string: str, board: chess.Board) -> bool:
             print(board)
         
         case "save":
-            print(f"To load this later, just pass in \n{board.fen()}\n"
-                  "with the [-l | --load] argument or the `load` in game command")
-        
-        case "load":
-            set_board(input("Paste board string here: "), board)
+            print(f"To load this later, just pass in the string with the load argument"
+                  f"\n\"{board.fen()}\"")
         
         case "quit":
             raise KeyboardInterrupt
