@@ -1,5 +1,5 @@
 # CLI Chess
-#### Video Demo:  <URL HERE>
+#### Video Demo:  <https://youtu.be/cnqsntef-JM>
 #### Description: Chess for the command line enjoyers.
 
 The program is a game of chess intended to be played on the terminal. It can be started using `python <path to project.py>` and it takes a handful of arguments to customise the chess bot and the board. A running game can be saved and later loaded by copy-pasting a string, called a fen. There is also an autosave feature that prompts the user next time if they would like to load the last game.
