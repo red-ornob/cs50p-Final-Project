@@ -1,7 +1,8 @@
+import argparse
 import sys
 import chess
 import pytest
-from project import get_move, get_args, command, set_board
+from project import get_move, get_args, command
 
 board = chess.Board()
 
@@ -21,23 +22,23 @@ def test_get_move(monkeypatch):
 
 # noinspection SpellCheckingInspection
 def test_get_args(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["./project.py", "--board", "-t", "10","-d", "50",
+    monkeypatch.setattr(sys, "argv", ["./project.py", "--board", "-t", "10","-d", "50", "--play", "2",
                                       "--load", r"rnb1kbnr/ppp1pppp/8/3q4/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 3"])
     args = get_args()
     assert args.load == r"rnb1kbnr/ppp1pppp/8/3q4/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 3"
     assert args.board is True
     assert args.time == 10
     assert args.depth == 50
+    
+    monkeypatch.setattr(sys, "argv", ["./project.py", "--board", "-time", "10"])
+    with pytest.raises(argparse.ArgumentError):
+        get_args()
 
 
 # noinspection SpellCheckingInspection
 def test_command(capsys, monkeypatch):
-    monkeypatch.setattr("builtins.input", lambda _: r"r1bqkbnr/ppp2ppp/2n5/4p3/4P3/3P1N2/PPP2PPP/R1BQKB1R w KQkq - 1 6")
-    assert command("load", board) is True
-    assert board.fen() == r"r1bqkbnr/ppp2ppp/2n5/4p3/4P3/3P1N2/PPP2PPP/R1BQKB1R w KQkq - 1 6"
-    
     assert command("save", board) is True
-    assert r"r1bqkbnr/ppp2ppp/2n5/4p3/4P3/3P1N2/PPP2PPP/R1BQKB1R w KQkq - 1 6" in capsys.readouterr().out
+    assert "\"rnbqkbnr/ppp1pppp/8/3p4/8/2N5/PPPPPPPP/R1BQKBNR w KQkq - 0 2\"" in capsys.readouterr().out
     
     assert command("board", board) is True
     assert capsys.readouterr().out == str(board)+"\n"
