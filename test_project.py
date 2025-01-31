@@ -1,8 +1,8 @@
-import argparse
 import sys
-import chess
 import pytest
-from project import get_move, get_args, command
+import argparse
+import chess
+from clichess import get_move, get_args, command
 
 board = chess.Board()
 
@@ -22,7 +22,7 @@ def test_get_move(monkeypatch):
 
 # noinspection SpellCheckingInspection
 def test_get_args(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["./project.py", "--board", "-t", "10","-d", "50", "--play", "2",
+    monkeypatch.setattr(sys, "argv", ["./clichess.py", "--board", "-t", "10","-d", "50", "--play", "2",
                                       "--load", r"rnb1kbnr/ppp1pppp/8/3q4/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 3"])
     args = get_args()
     assert args.load == r"rnb1kbnr/ppp1pppp/8/3q4/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 3"
@@ -30,7 +30,7 @@ def test_get_args(monkeypatch):
     assert args.time == 10
     assert args.depth == 50
     
-    monkeypatch.setattr(sys, "argv", ["./project.py", "--board", "-time", "10"])
+    monkeypatch.setattr(sys, "argv", ["./clichess.py", "--board", "-time", "10"])
     with pytest.raises(argparse.ArgumentError):
         get_args()
 

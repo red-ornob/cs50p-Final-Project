@@ -111,7 +111,7 @@ def get_args() -> argparse.Namespace:
     :return: the arguments as an argparse.Namespace
     """
     
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="python project.py", exit_on_error=False,
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="python clichess.py", exit_on_error=False,
                                                               description="a cli chess game to play against stockfish")
     parser.add_argument("-l", "--load", type=str,
                         help="loads a chess board from a string, you can copy a board with the save command")
